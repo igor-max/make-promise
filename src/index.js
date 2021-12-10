@@ -1,115 +1,4 @@
 
-// const PENDING = Symbol("PENDING");
-// const FULFILLED = Symbol("FULF");
-// const REJECTED = Symbol("REJECTED");
-
-// class MakePromise {
-//   constructor(executor) {
-//     this.status = PENDING;
-//     this.result = null;
-
-//     this.callbacks = [];
-
-
-//     const transition = (status, result) => {
-//       if (this.status === PENDING) {
-//         this.status = status;
-//         this.result = result;
-//       }
-//     }
-
-//     const onFulfilled = (value) => transition(FULFILLED, value);
-//     const onRejected = (reason) => transition(REJECTED, reason);
-
-//     let flag;
-//     const resolve = value => {
-//       // 这里用flag的原因是防止 onfulfilled 和 onrejected 函数多次运行
-//       // 防止多次 resolve || reject
-//       if (flag) return;
-//       flag = true;
-//       this.resolvePromise(this, value, onFulfilled, onRejected)
-//     }
-//     const reject = reason => {
-//       // 防止多次 resolve || reject
-//       if (flag) return;
-//       flag = true;
-//       onRejected(reason)
-//     }
-
-//     try {
-//       executor(resolve, reject);
-//     } catch (reason) {
-//       reject(reason);
-//     }
-//   }
-
-//   resolvePromise(promise, result, resolve, reject) {
-//     if (result === promise) {
-//       let reason = new TypeError('Can not fufill promise with itself')
-//       return reject(reason)
-//     }
-  
-//     if (result instanceof MakePromise) {
-//       return result.then(resolve, reject)
-//     }
-  
-//     if (result && result.then) {
-//       try {
-//         let then = result.then
-//         if (this.isFunction(then)) {
-//           return new MakePromise(then.bind(result)).then(resolve, reject)
-//         }
-//       } catch (error) {
-//         return reject(error)
-//       }
-//     }
-  
-//     resolve(result)
-//   }
-
-//   then(onFulfilled, onRejected) {
-//     return new MakePromise((resolve, reject) => {
-//       const callback = { onFulfilled, onRejected, resolve, reject };
-//       if (this.status === PENDING) {
-//         this.callbacks.push(callback);
-//       } else {
-//         // 在 executor 同步执行后就为fulfill状态就会运行 （如果 executor 执行后没有 resolve，那这个就不会运行，）（因为这个是同步的）
-//         setTimeout(() => this.handleCallback(callback, this.result, this.status), 0)
-//       }
-//     })
-//   }
-
-//   isFunction(fn) {
-//     return typeof fn === 'function';
-//   }
-
-//   handleCallback(callback, result, status) {
-//     const { onFulfilled, onRejected, resolve, reject } = callback;
-//     try {
-//       if (status === FULFILLED) {
-//         // 是函数就把函数的结果promise化，不然就把之前的结果往下放
-//         this.isFunction(onFulfilled) ? resolve(onFulfilled(result)) : resolve(result);
-//       } else {
-//         this.isFunction(onRejected) ? resolve(onFulfilled(result)) : resolve(result);
-//       }
-//     } catch (reason) {
-//       reject(reason);
-//     }
-//   }
-// }
-
-// MakePromise.deferred = function () {
-//   const dfd = {};
-//   dfd.promise = new MakePromise((resolve, reject) => {
-//     dfd.resolve = resolve;
-//     dfd.reject = reject;
-//   })
-//   return dfd;
-// }
-
-// module.exports = MakePromise
-
-
 const isFunction = obj => typeof obj === 'function'
 const isObject = obj => !!(obj && typeof obj === 'object')
 const isThenable = obj => (isFunction(obj) || isObject(obj)) && 'then' in obj
@@ -149,7 +38,6 @@ function Promise(f) {
 Promise.prototype.then = function(onFulfilled, onRejected) {
   return new Promise((resolve, reject) => {
     let callback = { onFulfilled, onRejected, resolve, reject }
-
     if (this.state === PENDING) {
       this.callbacks.push(callback)
     } else {
@@ -183,15 +71,18 @@ const transition = (promise, state, result) => {
 }
 
 const resolvePromise = (promise, result, resolve, reject) => {
+  console.log('resolve');
+  // 2.3.1 resolve self   --->    let p = new Promsie((resolve) => resolve(p))
   if (result === promise) {
     let reason = new TypeError('Can not fufill promise with itself')
     return reject(reason)
   }
 
+  // 2.3.2 
   if (isPromise(result)) {
     return result.then(resolve, reject)
   }
-
+  // 2.3.3
   if (isThenable(result)) {
     try {
       let then = result.then
@@ -215,4 +106,11 @@ Promise.deferred = function () {
   return dfd;
 }
 
-module.exports = Promise
+module.exports = Promise;
+
+
+new Promise((resolve, reject) => {
+  console.log(1);
+  resolve(2);
+  console.log(3);
+}).then(res => console.log(res));
