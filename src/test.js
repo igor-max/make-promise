@@ -97,21 +97,33 @@ class MakePromise {
     return new MakePromise((resolve, reject) => {
       const result = [];
       let isResolved = false;
+      if(!Array.isArray(promises)) {
+        return reject('必须是可迭代的对象');
+      }
+      // 处理空数组情况
+      if(!promises.length) {
+        return resolve(result);
+      }
       for (let i = 0; i < promises.length; i++) {
-        if(isResolved) { 
+        if (isResolved) {
           // 循环还是会继续，因为循环是同步，promise的异步
           return;
         };
-        promises[i].then(res => {
-          result.push(res);
-          if (i === promises.length - 1) {
+        const promise = promises[i];
+        if (promise instanceof Promise) {
+          promise.then(res => {
+            result.push(res);
+            if (i === promises.length - 1) {
+              isResolved = true;
+              resolve(result);
+            }
+          }, reason => {
             isResolved = true;
-            resolve(result);
-          }
-        }, reason => {
-          isResolved = true;
-          reject(reason);
-        });
+            reject(reason);
+          });
+        } else {
+          result.push(promise);
+        }
       }
     });
   }
@@ -127,12 +139,15 @@ MakePromise.deferred = function () {
 }
 
 
+MakePromise.all([]).then(r => console.log(r), err => console.log(err));
 
 MakePromise.all([new Promise((r) => r(1)), Promise.resolve(2), Promise.resolve(3)]).then(r => console.log(r), err => console.log(err));
 MakePromise.all([new Promise((r) => r(1)), Promise.resolve(2), Promise.resolve(3), Promise.reject('has error')]).then(r => console.log(r), err => console.log(err));
 
 
 module.exports = MakePromise;
+
+
 
 // MakePromise.all(promises).then(res => console.log(res));
 
