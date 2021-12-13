@@ -12,5 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "promises-aplus-tests": "^2.1.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
   }
 }

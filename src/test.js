@@ -73,7 +73,7 @@ class MakePromise {
           // then.call(x, resolve, reject)
           // return new MakePromise(then.bind(x).then(resolve, reject));
           return new MakePromise(then.bind(x)).then(resolve, reject)
-        } 
+        }
       } catch (reason) {
         return reject(reason);
       }
@@ -91,18 +91,51 @@ class MakePromise {
       }
     });
   }
+
+  static all(promises) {
+    // console.log(promises);
+    return new MakePromise((resolve, reject) => {
+      const result = [];
+      let isResolved = false;
+      for (let i = 0; i < promises.length; i++) {
+        if(isResolved) { 
+          // 循环还是会继续，因为循环是同步，promise的异步
+          return;
+        };
+        promises[i].then(res => {
+          result.push(res);
+          if (i === promises.length - 1) {
+            isResolved = true;
+            resolve(result);
+          }
+        }, reason => {
+          isResolved = true;
+          reject(reason);
+        });
+      }
+    });
+  }
 }
 
 MakePromise.deferred = function () {
   const dfd = {};
-  dfd.promise = new MakePromise( (resolve, reject) => {
-      dfd.resolve = resolve;
-      dfd.reject = reject;
+  dfd.promise = new MakePromise((resolve, reject) => {
+    dfd.resolve = resolve;
+    dfd.reject = reject;
   })
   return dfd;
 }
 
+
+
+MakePromise.all([new Promise((r) => r(1)), Promise.resolve(2), Promise.resolve(3)]).then(r => console.log(r), err => console.log(err));
+MakePromise.all([new Promise((r) => r(1)), Promise.resolve(2), Promise.resolve(3), Promise.reject('has error')]).then(r => console.log(r), err => console.log(err));
+
+
 module.exports = MakePromise;
+
+// MakePromise.all(promises).then(res => console.log(res));
+
 
 // let resolvePromise;
 
